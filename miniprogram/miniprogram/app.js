@@ -10,10 +10,10 @@ App({
 
   onLaunch() {
     // 获取云开发环境
-    wx.cloud.init({
-      env: 'logistics-tracker-dev',  // 替换为实际的云开发环境 ID
-      traceUser: true,
-    });
+wx.cloud.init({
+  env: 'logistics-tracker-prod-d7bae6369',
+  traceUser: true,
+});
 
     // 初始化时拉取用户数据和绑定状态
     this.refreshAll();
