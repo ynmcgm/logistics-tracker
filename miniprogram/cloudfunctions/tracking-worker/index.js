@@ -4,9 +4,7 @@
  * 定时触发器，每 2 小时执行一次。
  * 查询所有"跟踪中"的包裹，调用快递100 API 获取最新状态。
  */
-const crypto = require('crypto');
 const https = require('https');
-const querystring = require('querystring');
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -22,36 +20,6 @@ const KEY_STATUS_KEYWORDS = {
   signed: ['已签收', '签收人', '已投递', '已放入'],
   abnormal: ['退回', '异常', '延误', '滞留', '拒收', '无人'],
 };
-
-/**
- * 使用 Node.js https 模块发送 POST 请求（不依赖额外云函数）
- */
-function httpsPost(url, body) {
-  return new Promise((resolve, reject) => {
-    const urlObj = new URL(url);
-    const data = Buffer.from(body, 'utf-8');
-    const options = {
-      hostname: urlObj.hostname,
-      port: 443,
-      path: urlObj.pathname + urlObj.search,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': data.length,
-      },
-    };
-    const req = https.request(options, (res) => {
-      let chunks = [];
-      res.on('data', (c) => chunks.push(c));
-      res.on('end', () => {
-        resolve(Buffer.concat(chunks).toString('utf-8'));
-      });
-    });
-    req.on('error', reject);
-    req.write(data);
-    req.end();
-  });
-}
 
 /**
  * 主入口
@@ -111,31 +79,24 @@ async function queryKuaidi100(trackingNumber, courierCode) {
   }
 
   try {
-    const param = JSON.stringify({
-      company: courierCode,
-      num: trackingNumber,
-      from: '',  // 可选，发件地
-      to: '',    // 可选，目的地
+    // 注意：免费版使用旧 API（api.kuaidi100.com/api），企业版使用 poll/query.do
+    // 免费版使用 GET 方式，com + num 参数
+    const response = await new Promise((resolve, reject) => {
+      const url = `https://api.kuaidi100.com/api?id=${KUAIDI100_KEY}&com=${courierCode}&num=${trackingNumber}&show=2`;
+      https.get(url, (res) => {
+        let data = '';
+        res.on('data', c => data += c);
+        res.on('end', () => resolve(data));
+      }).on('error', reject);
     });
-
-    // 生成签名
-    const sign = crypto
-      .createHash('md5')
-      .update(param + KUAIDI100_KEY + KUAIDI100_CUSTOMER)
-      .digest('hex')
-      .toUpperCase();
-
-    const response = await httpsPost(
-      'https://poll.kuaidi100.com/poll/query.do',
-      `customer=${KUAIDI100_CUSTOMER}&sign=${sign}&param=${encodeURIComponent(param)}`
-    );
 
     if (!response) return null;
 
     const result = JSON.parse(response);
 
-    if (result.result === false) {
-      console.warn(`[Kuaidi100] Query failed: ${result.message}`);
+    // 旧 API 成功返回 status=200
+    if (result.status !== '200' && result.status !== 200) {
+      console.warn(`[Kuaidi100] Query failed: ${result.message || result.reason || 'Unknown'}`);
       return null;
     }
 
@@ -143,6 +104,7 @@ async function queryKuaidi100(trackingNumber, courierCode) {
     const records = result.data || [];
     if (records.length === 0) return null;
 
+    // 旧 API 返回的 data 是按时间正序的（最早在前）
     const latest = records[records.length - 1];
     const category = classifyStatus(latest.context);
 
