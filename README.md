@@ -46,10 +46,41 @@ logistics-tracker/
 | 物流查询 | 快递100 免费 API |
 | 消息推送 | 微信订阅消息 |
 
-## 开发状态
+## 部署状态
 
-- [ ] 拼多多引擎 —— 开发中
-- [ ] 京东引擎 —— 待开始
-- [ ] 淘宝引擎 —— 待开始
-- [ ] 小程序前端 —— 开发中
-- [ ] 云函数 —— 开发中
+- ✅ 拼多多引擎 —— 代码完成
+- ⏸️ 京东引擎 —— 待开始
+- ⏸️ 淘宝引擎 —— 待开始
+- ✅ 小程序前端 —— 代码完成
+- ✅ 云函数 —— 已部署到 CloudBase（4个云函数在线）
+- ⏸️ Playwright 云托管 —— 待部署
+- ⏸️ 微信订阅消息模板 —— 待申请
+- ⏸️ 小程序备案/认证 —— 上线前完成
+
+## 项目文件结构
+
+```
+logistics-tracker/
+├── docs/                       # 全套设计文档
+│   ├── 1-requirements.md      # 需求规格说明书
+│   ├── 2-architecture.md      # 系统架构设计
+│   ├── 3-database-design.md   # 数据库设计
+│   ├── 4-api-design.md        # API 接口设计
+│   ├── 5-engine-design.md     # Playwright 引擎设计
+│   ├── 6-frontend-design.md   # 前端设计
+│   ├── 7-notification.md      # 通知推送设计
+│   ├── 8-test-plan.md         # 测试计划
+│   └── 9-deployment.md        # 部署方案（含实际部署记录）
+├── engines/                   # Playwright 自动化引擎
+│   ├── common/                # 公共模块
+│   ├── pdd/                   # 拼多多引擎
+│   ├── server.js              # HTTP 服务入口
+│   └── docker/Dockerfile
+├── miniprogram/               # 微信小程序
+│   ├── miniprogram/           # 前端代码（5个页面）
+│   └── cloudfunctions/        # 云函数（4个已部署）
+├── tests/                     # 单元测试（66个全部通过）
+├── scripts/deploy.bat         # 一键部署脚本
+├── cloudbaserc.json           # CloudBase 配置
+└── .env.deploy                # 部署参数参考
+```

@@ -311,7 +311,73 @@ jobs:
 | 通知发送失败 | 通知日志 | 日失败率 > 10% |
 | Session 过期 | 数据库查询 | 超过 3 个 session 过期 |
 
-## 9.12 费用预估（个人使用）
+## 9.12 实际部署记录
+
+> 本节记录首次部署的实际过程和配置值，作为运维档案。
+
+### 部署日期
+- **首次部署**：2026-06-23
+- **部署方式**：CloudBase CLI 3.5.7（通过 Sisyphus AI Agent 执行）
+
+### 已注册账号
+
+| 平台 | 账号 | 用途 |
+|---|---|---|
+| GitHub | ynmcgm | 代码托管 |
+| 微信小程序 | ynmc@163.com | 小程序 AppID: `wx19349197c537e97e` |
+| CloudBase | logistics-tracker-prod-d7bae6369 | 云开发环境 |
+| 快递100 | 手机号注册 | API Key + Customer |
+
+### 已部署的云函数
+
+| 函数名 | 超时 | 环境变量 | 触发器 |
+|---|---|---|---|
+| api-gateway | 30s | KUAIDI100_KEY, KUAIDI100_CUSTOMER | HTTP 触发 |
+| tracking-worker | 120s | KUAIDI100_KEY, KUAIDI100_CUSTOMER | `0 */2 * * *`（每2小时） |
+| engine-controller | 300s | KUAIDI100_KEY, KUAIDI100_CUSTOMER, PLATFORMS=pdd, ENGINE_HOST | `0 8,14,20 * * *`（每日3次） |
+| notification-sender | 60s | KUAIDI100_KEY, KUAIDI100_CUSTOMER | `*/1 * * * *`（每分钟） |
+
+### 部署命令记录
+
+```bash
+# 安装 CLI
+npm install -g @cloudbase/cli
+
+# 登录（扫码授权）
+tcb login
+
+# 部署云函数
+tcb fn deploy api-gateway -e logistics-tracker-prod-d7bae6369
+tcb fn deploy tracking-worker -e logistics-tracker-prod-d7bae6369
+tcb fn deploy engine-controller -e logistics-tracker-prod-d7bae6369
+tcb fn deploy notification-sender -e logistics-tracker-prod-d7bae6369
+
+# 配置环境变量和触发器（从 cloudbaserc.json 推送）
+tcb config update fn api-gateway -e logistics-tracker-prod-d7bae6369
+tcb config update fn tracking-worker -e logistics-tracker-prod-d7bae6369
+tcb config update fn engine-controller -e logistics-tracker-prod-d7bae6369
+tcb config update fn notification-sender -e logistics-tracker-prod-d7bae6369
+```
+
+### 云函数版本
+
+| 函数 | 状态 | 备注 |
+|---|---|---|
+| api-gateway | ✅ 运行中 | lam-drqudaax |
+| tracking-worker | ✅ 运行中 | lam-2eonkg4j |
+| engine-controller | ✅ 运行中 | lam-qdjz1s4r |
+| notification-sender | ✅ 运行中 | lam-k165hbhl |
+
+### 待部署
+
+| 组件 | 状态 | 备注 |
+|---|---|---|
+| Playwright 引擎（云托管 Docker） | ⏸️ 待部署 | 需要 CloudBase 云托管环境，Chromium 约需 1GB 内存 |
+| 微信订阅消息模板 | ⏸️ 待申请 | 需在微信公众平台 → 功能 → 订阅消息 中申请两个模板 |
+| 微信小程序备案 | ⏸️ 暂未操作 | 上线前需完成备案 |
+| 微信认证（¥30/年） | ⏸️ 暂未操作 | 上线前需完成 |
+
+## 9.13 费用预估（个人使用）
 
 | 项目 | 月费用 | 说明 |
 |---|---|---|
