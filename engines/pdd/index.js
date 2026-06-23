@@ -38,7 +38,7 @@ class PDDEngine {
   }
 
   /**
-   * 轮询登录状态
+   * 轮询登录状态（使用 DB）
    *
    * @param {string} sessionId
    * @param {string} userId
@@ -46,6 +46,18 @@ class PDDEngine {
    */
   async checkLoginStatus(sessionId, userId) {
     return pollLoginStatus(sessionId, this.db, userId);
+  }
+
+  /**
+   * 轮询登录状态（无 DB，仅检查 QR 状态）
+   * 供云函数直接调用，结果由调用方写入 DB。
+   *
+   * @param {string} sessionId - 二维码会话 ID
+   * @param {string} userId - 微信用户 openid（用于查找浏览器 context）
+   * @returns {Promise<{ status: string, cookies?: Array, user_nick?: string }>}
+   */
+  async checkLoginStatusRaw(sessionId, userId) {
+    return pollLoginStatus(sessionId, null, userId);
   }
 
   /**

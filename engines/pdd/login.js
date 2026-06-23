@@ -52,9 +52,11 @@ export async function pollLoginStatus(sessionId, db, userId) {
   const result = await waitForScan(loginPage, 'pdd');
 
   if (result.success && result.cookies) {
-    // 加密保存 cookie
-    await saveSession(db, userId, 'pdd', result.cookies);
-    return { status: 'success', bind_at: new Date().toISOString() };
+    // 加密保存 cookie（仅在 db 可用时）
+    if (db) {
+      await saveSession(db, userId, 'pdd', result.cookies);
+    }
+    return { status: 'success', bind_at: new Date().toISOString(), cookies: result.cookies };
   }
 
   if (result.reason === 'QR code expired') {

@@ -61,7 +61,7 @@ exports.main = async (event, context) => {
       }
 
       case 'authStatus': {
-        const { session_id } = data;
+        const { session_id, platform } = data;
         const session = await db.collection('login_sessions')
           .where({ session_id, user_openid: openid })
           .get();
@@ -70,10 +70,66 @@ exports.main = async (event, context) => {
           return { code: 1003, error: 'Session not found' };
         }
 
-        return {
-          code: 0,
-          data: { status: session.data[0].status },
-        };
+        const loginSession = session.data[0];
+
+        // 如果已经是终态，直接返回
+        if (loginSession.status === 'success' || loginSession.status === 'expired') {
+          return { code: 0, data: { status: loginSession.status } };
+        }
+
+        // 向引擎查询最新扫码状态
+        try {
+          const engineService = await getEngineService();
+          const result = await engineService.post('/loginStatus', {
+            platform: platform || loginSession.platform,
+            session_id,
+            user_id: openid,
+          });
+
+          const engineStatus = result.data?.status;
+
+          // 扫描成功：保存 cookies 到 sessions 集合
+          if (engineStatus === 'success' && result.data?.cookies) {
+            // 写入 sessions 集合
+            await db.collection('sessions').add({
+              data: {
+                user_openid: openid,
+                platform: loginSession.platform,
+                status: 'active',
+                cookies: result.data.cookies,
+                created_at: db.serverDate(),
+                updated_at: db.serverDate(),
+              },
+            });
+
+            // 更新 login_sessions 状态
+            await db.collection('login_sessions')
+              .where({ _id: loginSession._id })
+              .update({
+                data: {
+                  status: 'success',
+                  bind_at: db.serverDate(),
+                  updated_at: db.serverDate(),
+                },
+              });
+
+            return { code: 0, data: { status: 'success' } };
+          }
+
+          // QR 码过期
+          if (engineStatus === 'expired') {
+            await db.collection('login_sessions')
+              .where({ _id: loginSession._id })
+              .update({ data: { status: 'expired', updated_at: db.serverDate() } });
+            return { code: 0, data: { status: 'expired' } };
+          }
+        } catch (err) {
+          // 引擎访问失败时，返回 DB 中已有的状态，不阻塞前端
+          console.error('[API] Engine loginStatus error:', err.message);
+        }
+
+        // 仍在等待扫码
+        return { code: 0, data: { status: 'pending' } };
       }
 
       case 'authUnbind': {

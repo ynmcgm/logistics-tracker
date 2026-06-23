@@ -7,6 +7,7 @@
 import http from 'node:http';
 import { URL } from 'node:url';
 import { getBrowser, closeAll } from './common/browser.js';
+import { getDatabase } from './common/db-adapter.js';
 
 // 引擎注册表：按平台名获取引擎实例
 const engineRegistry = {};
@@ -17,18 +18,8 @@ const engineRegistry = {};
 async function initEngines() {
   const enabled = (process.env.PLATFORMS || 'pdd').split(',').map(s => s.trim());
 
-  // 模拟 DB 对象（实际运行时由 CloudBase SDK 提供）
-  const db = {
-    collection: (name) => ({
-      findOne: async (query) => {
-        // 在云托管中，通过 CloudBase SDK 连接云数据库
-        // 此处为接口定义，实际由 cloudbase 提供
-        throw new Error('Database access must be configured via CloudBase SDK');
-      },
-      insertOne: async (doc) => { throw new Error('Not implemented in standalone mode'); },
-      updateOne: async (filter, update, opts) => { throw new Error('Not implemented'); },
-    }),
-  };
+  // 使用 DB 适配器（CloudRun 中自动使用 CloudBase SDK，否则 fallback 内存 DB）
+  const db = await getDatabase();
 
   if (enabled.includes('pdd')) {
     const { default: PDDEngine } = await import('./pdd/index.js');
@@ -155,6 +146,27 @@ async function handleRequest(request, response) {
 
       const isValid = await engine.validate(user_id);
       jsonResponse(response, 200, { code: 0, data: { valid: isValid } });
+      return;
+    }
+
+    // POST /loginStatus - 轮询扫码登录状态（无 DB，仅返回 QR 状态）
+    if (path === '/loginStatus' && method === 'POST') {
+      const body = await parseBody(request);
+      const { platform, session_id, user_id } = body;
+
+      if (!platform || !session_id || !user_id) {
+        jsonResponse(response, 400, { code: 1001, error: 'platform, session_id and user_id required' });
+        return;
+      }
+
+      const engine = engineRegistry[platform];
+      if (!engine) {
+        jsonResponse(response, 400, { code: 1001, error: `Unsupported platform: ${platform}` });
+        return;
+      }
+
+      const result = await engine.checkLoginStatusRaw(session_id, user_id);
+      jsonResponse(response, 200, { code: 0, data: result });
       return;
     }
 
