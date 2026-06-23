@@ -23,7 +23,7 @@
       </view>
       <view class="info-row">
         <text class="info-label">来源</text>
-        <text class="info-value">{{parcel.platform === 'pdd' ? '拼多多' : parcel.platform === 'jd' ? '京东' : '淘宝'}}</text>
+        <text class="info-value">{{parcel.platformName}}</text>
       </view>
       <view class="info-row" wx:if="{{parcel.arrivalTime}}">
         <text class="info-label">到达时间</text>

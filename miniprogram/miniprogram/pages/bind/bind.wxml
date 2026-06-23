@@ -37,7 +37,7 @@
 
         <!-- 等待扫码 -->
         <view class="qr-status" wx:if="{{loginStatus === 'pending'}}">
-          <text class="qr-hint">请用{{currentPlatform === 'pdd' ? '拼多多' : currentPlatform === 'jd' ? '京东' : '淘宝'}} App 扫描二维码</text>
+           <text class="qr-hint">请用{{platformName}} App 扫描二维码</text>
           <text class="qr-timeout">二维码有效期 300 秒</text>
         </view>
 

@@ -368,6 +368,14 @@ tcb config update fn notification-sender -e logistics-tracker-prod-d7bae6369
 | engine-controller | ✅ 运行中 | lam-qdjz1s4r |
 | notification-sender | ✅ 运行中 | lam-k165hbhl |
 
+### 小程序预览修复记录
+
+| 日期 | 问题 | 原因 | 修复 |
+|---|---|---|---|
+| 2026-06-23 | tabBar 图标缺失 | `images/` 目录不存在，8 个图标文件未创建 | 生成 81x81 PNG 图标（盒子/人物/柱状图/齿轮，灰度+绿色两套） |
+| 2026-06-23 | WXML 编译错误 | WXML 模板不支持可选链 `?.` 运算符 | index.wxml: `item.latest_record?.context` → `item.latest_record && item.latest_record.context`；stats.wxml 4 处同样问题 |
+| 2026-06-23 | WXML 嵌套三目运算符 | WXML 不支持嵌套 `a ? b : c ? d : e` 表达式 | bind.wxml 和 detail.wxml 改为在 JS 中预计算平台名 → 模板直接引用 `platformName` |
+
 ### 当前套餐
 
 | 项 | 值 |

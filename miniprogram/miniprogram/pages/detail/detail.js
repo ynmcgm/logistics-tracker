@@ -23,11 +23,13 @@ Page({
     try {
       const result = await app.callApi('getParcelDetail', { parcel_id: id });
 
+      const platformNames = { pdd: '拼多多', jd: '京东', taobao: '淘宝' };
       const parcel = {
         ...result,
         statusText: this.getStatusText(result.status),
         statusClass: this.getStatusClass(result.status),
         trackingMasked: this.maskTracking(result.tracking_number),
+        platformName: platformNames[result.platform] || result.platform,
         orderTime: this.formatDate(result.order_time),
         arrivalTime: result.arrived_at ? this.formatTime(result.arrived_at) : '',
         signedTime: result.signed_at ? this.formatTime(result.signed_at) : '',

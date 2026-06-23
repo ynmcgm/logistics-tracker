@@ -58,7 +58,7 @@
       </view>
       <view class="parcel-footer">
         <text class="update-time">{{item.timeText}}</text>
-        <text class="latest-status">{{item.latest_record?.context || ''}}</text>
+        <text class="latest-status">{{item.latest_record && item.latest_record.context || ''}}</text>
       </view>
       <view class="mute-badge {{item.muted ? '' : 'hidden'}}">已静音</view>
     </view>

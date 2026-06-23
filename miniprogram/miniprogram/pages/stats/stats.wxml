@@ -8,11 +8,11 @@
     <!-- 总览 -->
     <view class="card overview">
       <view class="overview-item">
-        <text class="overview-number">{{stats?.total || 0}}</text>
+        <text class="overview-number">{{stats && stats.total || 0}}</text>
         <text class="overview-label">累计包裹</text>
       </view>
       <view class="overview-item">
-        <text class="overview-number">{{stats?.current_month || 0}}</text>
+        <text class="overview-number">{{stats && stats.current_month || 0}}</text>
         <text class="overview-label">本月收件</text>
       </view>
     </view>
@@ -20,7 +20,7 @@
     <!-- 各平台占比 -->
     <view class="card chart-section">
       <text class="section-title">各平台包裹分布</text>
-      <view class="platform-bar" wx:if="{{stats?.platforms}}">
+      <view class="platform-bar" wx:if="{{stats && stats.platforms}}">
         <view class="bar-row">
           <text class="bar-label">拼多多</text>
           <view class="bar-track">
@@ -57,13 +57,13 @@
     <!-- 常用快递 -->
     <view class="card chart-section">
       <text class="section-title">常用快递</text>
-      <view class="courier-list" wx:if="{{stats?.couriers?.length > 0}}">
+      <view class="courier-list" wx:if="{{stats && stats.couriers && stats.couriers.length}}">
         <view class="courier-item" wx:for="{{stats.couriers}}" wx:key="name">
           <text class="courier-name">{{item.name}}</text>
           <text class="courier-count">{{item.count}} 件</text>
         </view>
       </view>
-      <view class="empty-state" wx:if="{{!stats?.couriers?.length}}">
+      <view class="empty-state" wx:if="{{!stats || !stats.couriers || !stats.couriers.length}}">
         <text>暂无数据</text>
       </view>
     </view>

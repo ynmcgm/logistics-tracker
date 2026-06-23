@@ -84,10 +84,12 @@ Page({
   /**
    * 发起绑定流程
    */
-  async startBind(platform) {
+  async   startBind(platform) {
+    const names = { pdd: '拼多多', jd: '京东', taobao: '淘宝' };
     this.setData({
       showQR: true,
       currentPlatform: platform,
+      platformName: names[platform] || platform,
       loginStatus: 'pending',
       qrBase64: '',
     });
