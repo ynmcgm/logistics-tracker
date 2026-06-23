@@ -28,26 +28,32 @@ exports.main = async (event, context) => {
         const { platform } = data;
         if (!platform) return { code: 1001, error: 'platform required' };
 
-        // 调用云托管的引擎服务发起登录
-        const engineService = await getEngineService();
-        const result = await engineService.post('/login', {
-          platform,
-          user_id: openid,
-        });
-
-        // 保存 session_id 到临时存储
-        await db.collection('login_sessions').add({
-          data: {
-            session_id: result.data.sessionId,
-            user_openid: openid,
+        try {
+          const engineService = await getEngineService();
+          const result = await engineService.post('/login', {
             platform,
-            qr_base64: result.data.qrBase64,
-            status: 'pending',
-            created_at: db.serverDate(),
-          },
-        });
+            user_id: openid,
+          });
 
-        return { code: 0, data: result.data };
+          // 保存 session_id 到临时存储
+          await db.collection('login_sessions').add({
+            data: {
+              session_id: result.data.sessionId,
+              user_openid: openid,
+              platform,
+              qr_base64: result.data.qrBase64,
+              status: 'pending',
+              created_at: db.serverDate(),
+            },
+          });
+
+          return { code: 0, data: result.data };
+        } catch (err) {
+          if (err.message === 'Engine service not configured') {
+            return { code: 1006, error: '扫码登录引擎尚未部署，请先升级 CloudBase 套餐到个人版(¥19.9/月)' };
+          }
+          throw err;
+        }
       }
 
       case 'authStatus': {
