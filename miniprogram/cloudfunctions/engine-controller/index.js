@@ -6,6 +6,8 @@
  *     自动同步各平台已绑定用户的订单
  *  2. HTTP 触发（手动触发指定平台的同步）
  */
+const http = require('http');
+const https = require('https');
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -72,25 +74,46 @@ async function autoSyncAll() {
 }
 
 /**
+ * 向引擎云托管发送 HTTP POST 请求
+ */
+function enginePost(path, bodyObj) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(`${ENGINE_HOST}${path}`);
+    const data = Buffer.from(JSON.stringify(bodyObj), 'utf-8');
+    const mod = url.protocol === 'https:' ? https : http;
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': data.length,
+      },
+    };
+    const req = mod.request(options, (res) => {
+      let chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf-8');
+        try { resolve(JSON.parse(text)); }
+        catch { resolve(JSON.parse(JSON.stringify({ raw: text }))); }
+      });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+/**
  * 同步单个用户的单个平台
  */
 async function syncPlatform(platform, userOpenid) {
   console.log(`[EngineController] Syncing ${platform} for ${userOpenid}`);
 
   try {
-    // 通过云托管 HTTP 调用引擎
-    // 在 CloudBase 环境中，可以用内网地址访问云托管
-    const response = await cloud.callFunction({
-      name: 'http-request',
-      data: {
-        url: `${ENGINE_HOST}/sync`,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, user_id: userOpenid }),
-      },
-    });
-
-    const result = response.result;
+    const result = await enginePost('/sync', { platform, user_id: userOpenid });
 
     if (result?.code === 0) {
       console.log(`[EngineController] Sync done: ${result.data?.newParcels || 0} new parcels`);
@@ -127,17 +150,7 @@ async function checkAllSessions() {
   for (const s of sessions.data) {
     try {
       // 通过引擎的 validate 接口检查
-      const response = await cloud.callFunction({
-        name: 'http-request',
-        data: {
-          url: `${ENGINE_HOST}/validate`,
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ platform: s.platform, user_id: s.user_openid }),
-        },
-      });
-
-      const result = response.result;
+      const result = await enginePost('/validate', { platform: s.platform, user_id: s.user_openid });
       if (result?.data?.valid === false) {
         await db.collection('sessions').doc(s._id).update({
           data: { status: 'expired', last_verified: db.serverDate() },

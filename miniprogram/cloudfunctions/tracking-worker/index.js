@@ -4,6 +4,9 @@
  * 定时触发器，每 2 小时执行一次。
  * 查询所有"跟踪中"的包裹，调用快递100 API 获取最新状态。
  */
+const crypto = require('crypto');
+const https = require('https');
+const querystring = require('querystring');
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -19,6 +22,36 @@ const KEY_STATUS_KEYWORDS = {
   signed: ['已签收', '签收人', '已投递', '已放入'],
   abnormal: ['退回', '异常', '延误', '滞留', '拒收', '无人'],
 };
+
+/**
+ * 使用 Node.js https 模块发送 POST 请求（不依赖额外云函数）
+ */
+function httpsPost(url, body) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const data = Buffer.from(body, 'utf-8');
+    const options = {
+      hostname: urlObj.hostname,
+      port: 443,
+      path: urlObj.pathname + urlObj.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': data.length,
+      },
+    };
+    const req = https.request(options, (res) => {
+      let chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf-8'));
+      });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
 
 /**
  * 主入口
@@ -92,20 +125,14 @@ async function queryKuaidi100(trackingNumber, courierCode) {
       .digest('hex')
       .toUpperCase();
 
-    const response = await cloud.callFunction({
-      name: 'http-request',
-      data: {
-        url: 'https://poll.kuaidi100.com/poll/query.do',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `customer=${KUAIDI100_CUSTOMER}&sign=${sign}&param=${encodeURIComponent(param)}`,
-      },
-    });
+    const response = await httpsPost(
+      'https://poll.kuaidi100.com/poll/query.do',
+      `customer=${KUAIDI100_CUSTOMER}&sign=${sign}&param=${encodeURIComponent(param)}`
+    );
 
-    const data = response.result;
-    if (!data) return null;
+    if (!response) return null;
 
-    const result = JSON.parse(data);
+    const result = JSON.parse(response);
 
     if (result.result === false) {
       console.warn(`[Kuaidi100] Query failed: ${result.message}`);
