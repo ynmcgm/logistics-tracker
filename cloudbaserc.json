@@ -8,7 +8,8 @@
       "installDependency": true,
       "envVariables": {
         "KUAIDI100_KEY": "UEPLKXkF9092",
-        "KUAIDI100_CUSTOMER": "07D4624843A9E1EAFBE8C49504ACE65F"
+        "KUAIDI100_CUSTOMER": "07D4624843A9E1EAFBE8C49504ACE65F",
+        "ENGINE_HOST": "https://logistics-engine-273836-6-1301681040.sh.run.tcloudbase.com"
       },
       "triggers": []
     },

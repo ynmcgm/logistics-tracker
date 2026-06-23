@@ -4,9 +4,13 @@
  * 所有小程序前端请求的入口。
  * 路由分发到对应处理逻辑。
  */
+const https = require('https');
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
+
+// 引擎云托管服务地址（由 CloudBase 环境变量注入）
+const ENGINE_HOST = process.env.ENGINE_HOST || 'https://logistics-engine-273836-6-1301681040.sh.run.tcloudbase.com';
 
 /**
  * 主入口
@@ -296,14 +300,35 @@ function formatParcel(p) {
 /**
  * 获取引擎云托管服务
  */
-async function getEngineService() {
-  // 通过 CloudBase 云调用访问云托管
-  // 实际部署时需要配置
+function getEngineService() {
   return {
     post: async (path, body) => {
-      // 通过 CloudBase 云调用 HTTP 请求
-      // 这里使用 cloud.callContainer 或云托管的内网地址
-      throw new Error('Engine service not configured');
+      return new Promise((resolve, reject) => {
+        const url = new URL(`${ENGINE_HOST}${path}`);
+        const data = Buffer.from(JSON.stringify(body), 'utf-8');
+        const options = {
+          hostname: url.hostname,
+          port: url.port || 443,
+          path: url.pathname + url.search,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': data.length,
+          },
+        };
+        const req = https.request(options, (res) => {
+          let chunks = [];
+          res.on('data', (c) => chunks.push(c));
+          res.on('end', () => {
+            const text = Buffer.concat(chunks).toString('utf-8');
+            try { resolve(JSON.parse(text)); }
+            catch { resolve({ raw: text }); }
+          });
+        });
+        req.on('error', reject);
+        req.write(data);
+        req.end();
+      });
     },
   };
 }
