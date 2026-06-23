@@ -1,0 +1,89 @@
+<!-- 设置页 -->
+<view class="page">
+  <!-- 通知设置 -->
+  <view class="card section">
+    <text class="section-title">通知设置</text>
+
+    <view class="setting-row">
+      <text class="setting-label">包裹到达城市通知</text>
+      <switch
+        checked="{{settings.notify_on_arrival}}"
+        color="#07c160"
+        data-key="notify_on_arrival"
+        bindchange="onSettingChange"
+      />
+    </view>
+
+    <view class="setting-row">
+      <text class="setting-label">包裹签收通知</text>
+      <switch
+        checked="{{settings.notify_on_signed}}"
+        color="#07c160"
+        data-key="notify_on_signed"
+        bindchange="onSettingChange"
+      />
+    </view>
+
+    <view class="setting-row">
+      <text class="setting-label">物流异常通知</text>
+      <switch
+        checked="{{settings.notify_on_abnormal}}"
+        color="#07c160"
+        data-key="notify_on_abnormal"
+        bindchange="onSettingChange"
+      />
+    </view>
+
+    <view class="setting-row">
+      <text class="setting-label">免打扰时段</text>
+      <view class="setting-right">
+        <switch
+          checked="{{settings.quiet_hours_enabled}}"
+          color="#07c160"
+          data-key="quiet_hours_enabled"
+          bindchange="onSettingChange"
+        />
+      </view>
+    </view>
+
+    <view class="setting-row quiet-hours {{settings.quiet_hours_enabled ? '' : 'hidden'}}">
+      <text class="setting-label">开始</text>
+      <picker mode="time" value="{{settings.quiet_hours_start}}" bindchange="onTimeChange" data-key="quiet_hours_start">
+        <text class="time-value">{{settings.quiet_hours_start}}</text>
+      </picker>
+    </view>
+    <view class="setting-row quiet-hours {{settings.quiet_hours_enabled ? '' : 'hidden'}}">
+      <text class="setting-label">结束</text>
+      <picker mode="time" value="{{settings.quiet_hours_end}}" bindchange="onTimeChange" data-key="quiet_hours_end">
+        <text class="time-value">{{settings.quiet_hours_end}}</text>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 订阅消息状态 -->
+  <view class="card section">
+    <text class="section-title">消息订阅</text>
+    <view class="setting-row">
+      <text class="setting-label">物流到达通知</text>
+      <text class="setting-status {{settings.subscribe_arrived === '已授权' ? 'authorized' : ''}}">
+        {{settings.subscribe_arrived || '未授权'}}
+      </text>
+    </view>
+    <view class="setting-row">
+      <text class="setting-label">包裹签收通知</text>
+      <text class="setting-status {{settings.subscribe_signed === '已授权' ? 'authorized' : ''}}">
+        {{settings.subscribe_signed || '未授权'}}
+      </text>
+    </view>
+    <view class="setting-hint">在小程序右上角「…」→ 设置 → 订阅消息中管理授权</view>
+  </view>
+
+  <!-- 数据管理 -->
+  <view class="card section">
+    <text class="section-title">数据管理</text>
+    <view class="setting-row danger" catchtap="clearAllData">
+      <text class="setting-label">清除所有数据</text>
+      <text class="setting-arrow">›</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,161 @@
+/** 详情页样式 */
+
+.parcel-info {
+  margin-top: 20rpx;
+}
+
+.info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.product-name {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+  flex: 1;
+  margin-right: 20rpx;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.info-value {
+  font-size: 26rpx;
+  color: #333;
+}
+
+.tracking {
+  font-family: monospace;
+}
+
+/* 操作按钮 */
+.action-bar {
+  display: flex;
+  margin: 20rpx 30rpx;
+  gap: 20rpx;
+}
+
+.action-btn {
+  flex: 1;
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #333;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.06);
+}
+
+.action-btn.danger {
+  color: #e53935;
+}
+
+/* 时间线 */
+.timeline-section {
+  margin-bottom: 40rpx;
+}
+
+.timeline-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 30rpx;
+}
+
+.timeline-item {
+  display: flex;
+  padding-bottom: 30rpx;
+  position: relative;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20rpx;
+  bottom: 0;
+  width: 2rpx;
+  background: #e0e0e0;
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+.timeline-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #ccc;
+  margin-top: 6rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.timeline-dot.key {
+  background: #07c160;
+  width: 24rpx;
+  height: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14rpx;
+  color: #fff;
+  margin-top: 4rpx;
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-context {
+  font-size: 28rpx;
+  color: #333;
+  display: block;
+}
+
+.timeline-context.bold {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.timeline-time {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 4rpx;
+  display: block;
+}
+
+.timeline-city {
+  font-size: 22rpx;
+  color: #07c160;
+  margin-top: 2rpx;
+  display: block;
+}
+
+.key-event .timeline-context {
+  color: #1565c0;
+}

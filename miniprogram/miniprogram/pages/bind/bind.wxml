@@ -1,0 +1,58 @@
+<!-- 账号绑定页 -->
+<view class="page">
+  <view class="card intro">
+    <text class="intro-title">绑定电商账号</text>
+    <text class="intro-desc">绑定后，小程序将自动同步您的订单和物流信息</text>
+  </view>
+
+  <view class="platform-list">
+    <view
+      class="platform-card card"
+      wx:for="{{platforms}}"
+      wx:key="key"
+      data-platform="{{item.key}}"
+      catchtap="onPlatformTap"
+    >
+      <view class="platform-icon">{{item.icon}}</view>
+      <view class="platform-info">
+        <text class="platform-name">{{item.name}}</text>
+        <text class="platform-status {{item.status}}">{{item.statusText}}</text>
+      </view>
+      <view class="platform-arrow">›</view>
+    </view>
+  </view>
+
+  <!-- QR 二维码弹窗 -->
+  <view class="qr-modal {{showQR ? '' : 'hidden'}}">
+    <view class="qr-modal-mask" catchtap="closeQR"></view>
+    <view class="qr-modal-content card">
+      <view class="qr-header">
+        <text class="qr-title">扫码授权</text>
+        <text class="qr-close" catchtap="closeQR">✕</text>
+      </view>
+
+      <view class="qr-body">
+        <!-- 二维码 -->
+        <image class="qr-image" src="{{qrBase64}}" wx:if="{{qrBase64}}" mode="widthFix"></image>
+
+        <!-- 等待扫码 -->
+        <view class="qr-status" wx:if="{{loginStatus === 'pending'}}">
+          <text class="qr-hint">请用{{currentPlatform === 'pdd' ? '拼多多' : currentPlatform === 'jd' ? '京东' : '淘宝'}} App 扫描二维码</text>
+          <text class="qr-timeout">二维码有效期 300 秒</text>
+        </view>
+
+        <!-- 扫码成功 -->
+        <view class="qr-status success" wx:if="{{loginStatus === 'success'}}">
+          <text class="qr-check">✓</text>
+          <text>绑定成功！</text>
+        </view>
+
+        <!-- 过期 -->
+        <view class="qr-status expired" wx:if="{{loginStatus === 'expired'}}">
+          <text>二维码已过期</text>
+          <view class="btn-primary" catchtap="retryBind">重新获取</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

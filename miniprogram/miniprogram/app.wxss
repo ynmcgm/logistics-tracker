@@ -1,0 +1,87 @@
+/** 全局样式 */
+
+page {
+  background-color: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #333;
+  box-sizing: border-box;
+}
+
+/** 卡片组件 */
+.card {
+  background: #ffffff;
+  border-radius: 12rpx;
+  padding: 30rpx;
+  margin: 20rpx 30rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+/** 按钮基础样式 */
+.btn-primary {
+  background: #07c160;
+  color: #fff;
+  border-radius: 8rpx;
+  padding: 20rpx 40rpx;
+  font-size: 28rpx;
+  text-align: center;
+}
+
+.btn-primary:active {
+  opacity: 0.8;
+}
+
+/** 状态标签 */
+.status-badge {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: 6rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.status-transit {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-arrived {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.status-signed {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.status-abnormal {
+  background: #fbe9e7;
+  color: #c62828;
+}
+
+/** 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+}
+
+.empty-state text {
+  color: #999;
+  font-size: 28rpx;
+  margin-top: 20rpx;
+}
+
+/** 加载中 */
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 40rpx 0;
+}
+
+/** 列表 */
+.list {
+  padding-bottom: 40rpx;
+}

@@ -1,0 +1,160 @@
+/** 绑定页样式 */
+
+.intro {
+  text-align: center;
+  margin-top: 30rpx;
+}
+
+.intro-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.intro-desc {
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 12rpx;
+  display: block;
+}
+
+/* 平台列表 */
+.platform-list {
+  margin-top: 10rpx;
+}
+
+.platform-card {
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+}
+
+.platform-icon {
+  font-size: 48rpx;
+  margin-right: 24rpx;
+  width: 60rpx;
+  text-align: center;
+}
+
+.platform-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.platform-name {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.platform-status {
+  font-size: 24rpx;
+  margin-top: 6rpx;
+}
+
+.platform-status.active {
+  color: #07c160;
+}
+
+.platform-status.expired, .platform-status.revoked {
+  color: #ff9800;
+}
+
+.platform-status.not_bind {
+  color: #999;
+}
+
+.platform-arrow {
+  font-size: 40rpx;
+  color: #ccc;
+}
+
+/* QR 弹窗 */
+.qr-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-modal-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.qr-modal-content {
+  position: relative;
+  width: 600rpx;
+  z-index: 101;
+}
+
+.qr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.qr-title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.qr-close {
+  font-size: 36rpx;
+  color: #999;
+  padding: 10rpx;
+}
+
+.qr-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qr-image {
+  width: 400rpx;
+  height: 400rpx;
+  margin-bottom: 30rpx;
+}
+
+.qr-status {
+  text-align: center;
+}
+
+.qr-hint {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.qr-timeout {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 10rpx;
+  display: block;
+}
+
+.qr-check {
+  font-size: 60rpx;
+  color: #07c160;
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.qr-status.expired text, .qr-status.expired view {
+  margin-top: 20rpx;
+}
+
+.hidden {
+  display: none;
+}

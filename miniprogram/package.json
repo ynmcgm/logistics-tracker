@@ -1,0 +1,9 @@
+{
+  "name": "logistics-tracker",
+  "version": "1.0.0",
+  "description": "物流自动跟踪助手",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/unit/*.test.js"
+  }
+}

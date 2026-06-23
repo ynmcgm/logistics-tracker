@@ -1,0 +1,99 @@
+/** 统计页样式 */
+
+.overview {
+  display: flex;
+  justify-content: space-around;
+  padding: 40rpx 30rpx;
+}
+
+.overview-item {
+  text-align: center;
+}
+
+.overview-number {
+  font-size: 56rpx;
+  font-weight: 700;
+  color: #07c160;
+  display: block;
+}
+
+.overview-label {
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 8rpx;
+  display: block;
+}
+
+/* 图表区 */
+.chart-section {
+  margin-top: 20rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+/* 平台柱状图 */
+.bar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.bar-label {
+  width: 100rpx;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.bar-track {
+  flex: 1;
+  height: 32rpx;
+  background: #f0f0f0;
+  border-radius: 16rpx;
+  margin: 0 16rpx;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 16rpx;
+  transition: width 0.3s;
+}
+
+.bar-fill.pdd { background: #e53935; }
+.bar-fill.jd { background: #1565c0; }
+.bar-fill.taobao { background: #ff9800; }
+
+.bar-count {
+  width: 60rpx;
+  font-size: 26rpx;
+  color: #333;
+  text-align: right;
+}
+
+/* 快递列表 */
+.courier-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.courier-item:last-child {
+  border-bottom: none;
+}
+
+.courier-name {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.courier-count {
+  font-size: 28rpx;
+  color: #07c160;
+  font-weight: 500;
+}

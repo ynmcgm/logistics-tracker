@@ -1,0 +1,77 @@
+<!-- 首页 - 包裹列表 -->
+<view class="page">
+  <!-- 顶部状态 Tab -->
+  <view class="tab-bar">
+    <view
+      class="tab-item {{currentTab === 'all' ? 'active' : ''}}"
+      data-tab="all"
+      catchtap="onTabChange"
+    >全部</view>
+    <view
+      class="tab-item {{currentTab === 'transit' ? 'active' : ''}}"
+      data-tab="transit"
+      catchtap="onTabChange"
+    >运输中</view>
+    <view
+      class="tab-item {{currentTab === 'arrived' ? 'active' : ''}}"
+      data-tab="arrived"
+      catchtap="onTabChange"
+    >已到达</view>
+    <view
+      class="tab-item {{currentTab === 'signed' ? 'active' : ''}}"
+      data-tab="signed"
+      catchtap="onTabChange"
+    >已签收</view>
+  </view>
+
+  <!-- 绑定引导 -->
+  <view class="bind-guide {{showBindGuide ? '' : 'hidden'}}">
+    <view class="bind-guide-content">
+      <text class="bind-guide-icon">📦</text>
+      <text class="bind-guide-text">绑定电商平台账号，自动同步包裹</text>
+      <view class="btn-primary" catchtap="goToBind">去绑定</view>
+    </view>
+  </view>
+
+  <!-- 包裹列表 -->
+  <scroll-view
+    class="parcel-list"
+    scroll-y
+    bindscrolltolower="onReachBottom"
+    enhanced
+    show-scrollbar="{{false}}"
+  >
+    <view
+      class="parcel-card card"
+      wx:for="{{parcels}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      catchtap="onParcelTap"
+    >
+      <view class="parcel-header">
+        <text class="courier">{{item.courier}}</text>
+        <text class="status-badge {{item.statusClass}}">{{item.statusText}}</text>
+      </view>
+      <view class="parcel-body">
+        <text class="product-name">{{item.product_name}}</text>
+        <text class="tracking-number">{{item.trackingMasked}}</text>
+      </view>
+      <view class="parcel-footer">
+        <text class="update-time">{{item.timeText}}</text>
+        <text class="latest-status">{{item.latest_record?.context || ''}}</text>
+      </view>
+      <view class="mute-badge {{item.muted ? '' : 'hidden'}}">已静音</view>
+    </view>
+  </scroll-view>
+
+  <!-- 加载状态 -->
+  <view class="loading" wx:if="{{loading && parcels.length === 0}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && parcels.length === 0 && !showBindGuide}}">
+    <text>暂无包裹</text>
+    <text>绑定账号后，订单将自动同步到这里</text>
+  </view>
+</view>

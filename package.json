@@ -1,0 +1,16 @@
+{
+  "name": "logistics-tracker",
+  "version": "1.0.0",
+  "description": "微信小程序 - 自动跟踪拼多多/京东/淘宝物流",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/unit/*.test.js",
+    "test:integration": "node --test tests/integration/*.test.js",
+    "lint": "eslint engines/ miniprogram/cloudfunctions/"
+  },
+  "workspaces": [
+    "engines",
+    "miniprogram/cloudfunctions"
+  ]
+}

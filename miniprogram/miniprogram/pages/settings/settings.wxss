@@ -1,0 +1,72 @@
+/** 设置页样式 */
+
+.section {
+  margin-top: 20rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.setting-row:last-child {
+  border-bottom: none;
+}
+
+.setting-label {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.setting-right {
+  display: flex;
+  align-items: center;
+}
+
+.quiet-hours {
+  padding-left: 40rpx;
+}
+
+.time-value {
+  font-size: 28rpx;
+  color: #07c160;
+}
+
+.setting-status {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.setting-status.authorized {
+  color: #07c160;
+}
+
+.setting-hint {
+  font-size: 22rpx;
+  color: #bbb;
+  margin-top: 16rpx;
+}
+
+.setting-arrow {
+  font-size: 36rpx;
+  color: #ccc;
+}
+
+.danger .setting-label {
+  color: #e53935;
+}
+
+.hidden {
+  display: none;
+}
