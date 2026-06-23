@@ -120,7 +120,8 @@ async function syncPlatform(platform, userOpenid) {
       return { success: true, newParcels: result.data?.newParcels || 0 };
     }
 
-    throw new Error(result?.error || 'Unknown error');
+      console.error('[EngineController] Engine response:', JSON.stringify(result));
+      throw new Error(result?.error || result?.message || 'Unknown error');
   } catch (err) {
     console.error(`[EngineController] Sync failed:`, err.message);
 
