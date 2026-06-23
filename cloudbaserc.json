@@ -1,0 +1,87 @@
+{
+  "envId": "logistics-tracker-prod-d7bae6369",
+  "framework": {
+    "plugins": {
+      "api-gateway": {
+        "use": "@cloudbase/framework-plugin-function",
+        "inputs": {
+          "functionName": "api-gateway",
+          "runtime": "Nodejs18",
+          "entry": "index.js",
+          "source": "miniprogram/cloudfunctions/api-gateway",
+          "timeout": 30,
+          "envVariables": {
+            "KUAIDI100_KEY": "UEPLKXkF9092",
+            "KUAIDI100_CUSTOMER": "07D4624843A9E1EAFBE8C49504ACE65F"
+          },
+          "triggers": []
+        }
+      },
+      "tracking-worker": {
+        "use": "@cloudbase/framework-plugin-function",
+        "inputs": {
+          "functionName": "tracking-worker",
+          "runtime": "Nodejs18",
+          "entry": "index.js",
+          "source": "miniprogram/cloudfunctions/tracking-worker",
+          "timeout": 120,
+          "envVariables": {
+            "KUAIDI100_KEY": "UEPLKXkF9092",
+            "KUAIDI100_CUSTOMER": "07D4624843A9E1EAFBE8C49504ACE65F"
+          },
+          "triggers": [
+            {
+              "name": "every-2-hours",
+              "type": "timer",
+              "config": "0 */2 * * *"
+            }
+          ]
+        }
+      },
+      "engine-controller": {
+        "use": "@cloudbase/framework-plugin-function",
+        "inputs": {
+          "functionName": "engine-controller",
+          "runtime": "Nodejs18",
+          "entry": "index.js",
+          "source": "miniprogram/cloudfunctions/engine-controller",
+          "timeout": 300,
+          "envVariables": {
+            "KUAIDI100_KEY": "UEPLKXkF9092",
+            "KUAIDI100_CUSTOMER": "07D4624843A9E1EAFBE8C49504ACE65F",
+            "PLATFORMS": "pdd",
+            "ENGINE_HOST": "http://logistics-engine:3000"
+          },
+          "triggers": [
+            {
+              "name": "daily-3-times",
+              "type": "timer",
+              "config": "0 8,14,20 * * *"
+            }
+          ]
+        }
+      },
+      "notification-sender": {
+        "use": "@cloudbase/framework-plugin-function",
+        "inputs": {
+          "functionName": "notification-sender",
+          "runtime": "Nodejs18",
+          "entry": "index.js",
+          "source": "miniprogram/cloudfunctions/notification-sender",
+          "timeout": 60,
+          "envVariables": {
+            "KUAIDI100_KEY": "UEPLKXkF9092",
+            "KUAIDI100_CUSTOMER": "07D4624843A9E1EAFBE8C49504ACE65F"
+          },
+          "triggers": [
+            {
+              "name": "every-minute",
+              "type": "timer",
+              "config": "*/1 * * * *"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
