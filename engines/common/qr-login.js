@@ -152,7 +152,13 @@ export async function waitForScan(page, platform) {
 
         // PDD API 拦截检测（最快速）
         if (scanSuccess) {
-          await sleep(LOGIN_CHECK_DELAY_MS);
+          await sleep(1000);
+          // 导航到首页触发 PDD 写入鉴权 cookie（set-cookie 在导航响应头中）
+          if (platform === 'pdd') {
+            try {
+              await page.goto('https://yangkeduo.com/', { waitUntil: 'domcontentloaded', timeout: 15_000 });
+            } catch { /* 导航失败无所谓，当前 cookie 可能已包含鉴权信息 */ }
+          }
           return await extractCookies(page);
         }
 
@@ -163,11 +169,17 @@ export async function waitForScan(page, platform) {
           return await extractCookies(page);
         }
       } catch (err) {
-        // 页面可能跳转导致元素检查失败，这也是登录成功的一个信号
-        const currentUrl = page.url();
-        if (!currentUrl.includes('login')) {
-          await sleep(LOGIN_CHECK_DELAY_MS);
-          return await extractCookies(page);
+        // 页面跳转导致元素检查失败，但可能是反爬重定向而非真实登录
+        // 需要和有 auth cookie 才确认
+        try {
+          const url = page.url();
+          if (!url.includes('login') && await hasAuthCookies(page)) {
+            await sleep(LOGIN_CHECK_DELAY_MS);
+            return await extractCookies(page);
+          }
+        } catch {
+          // 完全无法操作页面，视作失效
+          return { success: false, reason: 'page unavailable' };
         }
       }
 
@@ -186,6 +198,22 @@ export async function waitForScan(page, platform) {
 async function extractCookies(page) {
   const cookies = await page.context().cookies();
   return { success: true, cookies };
+}
+
+/**
+ * 检查页面是否有 PDD 鉴权 cookie（避免 URL 重定向导致的误判）
+ */
+async function hasAuthCookies(page) {
+  try {
+    const cookies = await page.context().cookies();
+    return cookies.some(c =>
+      c.name.includes('pdd_token') ||
+      c.name.includes('_pdd_') ||
+      c.name.includes('PDDAccessToken')
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -258,7 +286,18 @@ function getLoginCheckStrategy(platform) {
       const url = page.url();
       // 拼多多登录成功后会跳离登录页（到首页或订单页）
       if (!url.includes('login.html') && !url.includes('login')) {
-        return true;
+        // URL 变化不代表登录成功——PDD 可能因反爬/空闲重定向到首页。
+        // 必须有鉴权 cookie 才确认登录。
+        try {
+          const cookies = await page.context().cookies();
+          const pddCookie = cookies.find(c =>
+            c.name.includes('pdd_token') ||
+            c.name.includes('_pdd_') ||
+            c.name.includes('PDDAccessToken')
+          );
+          if (pddCookie) return true;
+        } catch {}
+        return false;
       }
       // 桌面版登录成功后可见用户头像/昵称
       const userVisible = await page.locator('.user-info, .user-name, [class*="avatar"]')
