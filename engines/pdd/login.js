@@ -62,9 +62,10 @@ export async function startLogin(userId, db) {
     const { sessionId, qrBase64 } = await generateQR(context, 'pdd');
 
     // 后台监控扫码状态，结果写入缓存供 pollLoginStatus 读取
-    qrScanResults.set(sessionId, { status: 'pending', _ts: Date.now() });
+    qrScanResults.set(sessionId, { status: 'pending', _ts: Date.now(), _page: page });
     waitForScan(page, 'pdd').then(result => {
-      qrScanResults.set(sessionId, { ...result, status: result.success ? 'success' : (result.reason === 'QR code expired' || result.reason === 'timeout' ? 'expired' : 'pending'), _ts: Date.now() });
+      const entry = qrScanResults.get(sessionId);
+      qrScanResults.set(sessionId, { ...result, status: result.success ? 'success' : (result.reason === 'QR code expired' || result.reason === 'timeout' ? 'expired' : 'pending'), _ts: Date.now(), _page: entry?._page || null });
     }).catch(err => {
       console.error(`[PDD-QR] Background scan error for ${sessionId}:`, err.message);
       qrScanResults.set(sessionId, { status: 'unknown', _ts: Date.now() });
@@ -100,12 +101,18 @@ export async function pollLoginStatus(sessionId, db, userId) {
   }
 
   if (cached.reason === 'QR code expired' || cached.reason === 'timeout') {
-    // 关闭页面（通过 context 查找）
+    // 关闭 QR 页面（优先用缓存的 page 引用）
     try {
-      const context = await getContext(userId, 'pdd');
-      const page = context.pages().find(p => p.url().includes('login'));
-      if (page) await page.close();
+      if (cached._page) {
+        await cached._page.close();
+      } else {
+        // fallback: 通过 context 查找
+        const context = await getContext(userId, 'pdd');
+        const pages = context.pages();
+        if (pages.length > 0) await pages[pages.length - 1].close();
+      }
     } catch {}
+    qrScanResults.delete(sessionId);
     return { status: 'expired' };
   }
 
@@ -213,10 +220,8 @@ export async function verifySmsCode(sessionId, code, db) {
     }
 
     // 点击「登录」按钮
-    // PDD 页面布局中登录按钮也可能在视口外，使用 JS dispatch
+    // PDD 页面布局中登录按钮也在视口外，用 JS dispatch 绕过 Playwright 视口限制
     const loginClicked = await page.evaluate(() => {
-      const btn = document.querySelector('button:has-text("登录"), .login-btn, [class*="login"]');
-      // 简化版：查找包含「登录」文字的 button
       const btns = document.querySelectorAll('button');
       for (const b of btns) {
         if (b.textContent.includes('登录')) { b.click(); return true; }
@@ -228,18 +233,31 @@ export async function verifySmsCode(sessionId, code, db) {
     }
     await sleep(500);
 
-    // 等待登录完成（页面跳转或 cookie 写入）
-    await sleep(3_000);
-
-    // 检查是否登录成功
-    const currentUrl = page.url();
-    if (currentUrl.includes('login.html') || currentUrl.includes('login')) {
-      // 检查是否有错误提示
-      const errorMsg = await page.locator('.error-msg, [class*="error"], .toast').first().textContent().catch(() => '');
-      if (errorMsg) {
-        return { success: false, error: `Login failed: ${errorMsg.trim()}` };
+    // 轮询等待登录完成（URL 跳离登录页，最长 20 秒）
+    const LOGIN_POLL_MS = 20_000;
+    const LOGIN_CHECK_INTERVAL = 500;
+    let loginSuccessUrl = false;
+    let loginError = '';
+    for (let waited = 0; waited < LOGIN_POLL_MS; waited += LOGIN_CHECK_INTERVAL) {
+      await sleep(LOGIN_CHECK_INTERVAL);
+      const curUrl = page.url();
+      if (!curUrl.includes('login.html') && !curUrl.includes('login')) {
+        loginSuccessUrl = true;
+        break;
       }
-      return { success: false, error: 'Login failed - still on login page' };
+      // 每次轮询都检查错误提示
+      const errText = await page.locator('.error-msg, [class*="error"], .toast')
+        .first().textContent().catch(() => '');
+      if (errText && errText.trim()) {
+        loginError = errText.trim();
+        break;
+      }
+    }
+    if (loginError) {
+      return { success: false, error: `Login failed: ${loginError}` };
+    }
+    if (!loginSuccessUrl) {
+      return { success: false, error: 'Login failed - still on login page after timeout' };
     }
 
     // 登录成功，提取 cookies
