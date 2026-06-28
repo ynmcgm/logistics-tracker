@@ -33,6 +33,20 @@ function generateSessionId() {
   return `qr_${ts}_${rand}`;
 }
 
+/* ───────── QR 扫码状态缓存 ───────── */
+/** @type {Map<string, { status: string, success?: boolean, cookies?: import('playwright').Cookie[], reason?: string }>} */
+const qrScanResults = new Map();
+
+// QR 扫描结果 10 分钟过期清理
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, result] of qrScanResults) {
+    if (result._ts && now - result._ts > 10 * 60 * 1000) {
+      qrScanResults.delete(id);
+    }
+  }
+}, 120_000).unref();
+
 /**
  * 执行拼多多扫码登录
  *
@@ -46,16 +60,26 @@ export async function startLogin(userId, db) {
 
   try {
     const { sessionId, qrBase64 } = await generateQR(context, 'pdd');
+
+    // 后台监控扫码状态，结果写入缓存供 pollLoginStatus 读取
+    qrScanResults.set(sessionId, { status: 'pending', _ts: Date.now() });
+    waitForScan(page, 'pdd').then(result => {
+      qrScanResults.set(sessionId, { ...result, status: result.success ? 'success' : (result.reason === 'QR code expired' || result.reason === 'timeout' ? 'expired' : 'pending'), _ts: Date.now() });
+    }).catch(err => {
+      console.error(`[PDD-QR] Background scan error for ${sessionId}:`, err.message);
+      qrScanResults.set(sessionId, { status: 'unknown', _ts: Date.now() });
+    });
+
     return { sessionId, qrBase64 };
   } catch (err) {
     await page.close();
     throw err;
   }
-  // 注意: page 不关闭，后续 waitForScan 需要使用
+  // page 不关闭，后台 waitForScan 需要使用
 }
 
 /**
- * 轮询扫码状态
+ * 轮询扫码状态（非阻塞，读缓存）
  *
  * @param {string} sessionId - 之前返回的 sessionId
  * @param {object} db - 数据库对象
@@ -63,35 +87,25 @@ export async function startLogin(userId, db) {
  * @returns {Promise<{ status: string }>}
  */
 export async function pollLoginStatus(sessionId, db, userId) {
-  // 从缓存中获取登录页面
-  // 注意：实际实现中需要维护 sessionId → page 的映射
-  // 这里简化处理，直接通过浏览器模块获取
-
-  const context = await getContext(userId, 'pdd');
-  const pages = context.pages();
-  const loginPage = pages.find(p => p.url().includes('login'));
-
-  if (!loginPage) {
+  const cached = qrScanResults.get(sessionId);
+  if (!cached) {
     return { status: 'unknown' };
   }
 
-  const result = await waitForScan(loginPage, 'pdd');
-
-  if (result.success && result.cookies) {
-    // 加密保存 cookie（仅在 db 可用时）
+  if (cached.success && cached.cookies) {
     if (db) {
-      await saveSession(db, userId, 'pdd', result.cookies);
+      await saveSession(db, userId, 'pdd', cached.cookies);
     }
-    return { status: 'success', bind_at: new Date().toISOString(), cookies: result.cookies };
+    return { status: 'success', bind_at: new Date().toISOString(), cookies: cached.cookies };
   }
 
-  if (result.reason === 'QR code expired') {
-    await loginPage.close();
-    return { status: 'expired' };
-  }
-
-  if (result.reason === 'timeout') {
-    await loginPage.close();
+  if (cached.reason === 'QR code expired' || cached.reason === 'timeout') {
+    // 关闭页面（通过 context 查找）
+    try {
+      const context = await getContext(userId, 'pdd');
+      const page = context.pages().find(p => p.url().includes('login'));
+      if (page) await page.close();
+    } catch {}
     return { status: 'expired' };
   }
 
@@ -134,11 +148,12 @@ export async function startSmsLogin(userId, phone) {
     await sleep(500);
 
     // 点击「发送验证码」按钮
-    const sendBtn = page.locator('button:has-text("发送验证码"), .send-code, [class*="send"]').first();
+    const sendBtn = page.locator('button:has-text("发送验证码"), .send-code, [class*="send"], #code-button').first();
     if (!(await sendBtn.isVisible({ timeout: 3_000 }))) {
       return { success: false, sessionId: null, error: 'SMS button not found' };
     }
-    await sendBtn.click({ timeout: 5_000 });
+    // 强制点击——按钮可能不在视口内（PDD 页面布局导致）
+    await sendBtn.click({ timeout: 5_000, force: true });
 
     // 创建 session 并保存
     const sessionId = generateSessionId();
@@ -197,7 +212,8 @@ export async function verifySmsCode(sessionId, code, db) {
     if (!(await loginBtn.isVisible({ timeout: 3_000 }))) {
       return { success: false, error: 'Login button not found' };
     }
-    await loginBtn.click({ timeout: 5_000 });
+    // 强制点击——登录按钮可能不在视口内（PDD 页面布局导致）
+    await loginBtn.click({ timeout: 5_000, force: true });
 
     // 等待登录完成（页面跳转或 cookie 写入）
     await sleep(3_000);
