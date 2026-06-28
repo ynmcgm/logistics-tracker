@@ -31,12 +31,12 @@ export function getStealthConfig(platform = 'default') {
 
   const platformSpecific = {
     pdd: {
-      // 拼多多移动端，反检测相对宽松
-      viewport: { width: 375, height: 812 },
+      // 拼多多桌面版登录页 — desktop UA 可减少 SPA 跳转，且 QR 码渲染更稳定
+      viewport: { width: 1280, height: 800 },
       userAgent:
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) ' +
-        'AppleWebKit/605.1.15 (KHTML, like Gecko) ' +
-        'Mobile/15E148 MicroMessenger/8.0.50',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
+        'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+        'Chrome/125.0.0.0 Safari/537.36',
     },
     jd: {
       // 京东桌面版
@@ -81,7 +81,7 @@ export function getStealthConfig(platform = 'default') {
  */
 export function getLoginUrl(platform) {
   const urls = {
-    pdd: 'https://mobile.yangkeduo.com/login.html',
+    pdd: 'https://yangkeduo.com/login.html',
     jd: 'https://passport.jd.com/new/login.aspx',
     taobao: 'https://login.taobao.com/',
   };
