@@ -148,12 +148,17 @@ export async function startSmsLogin(userId, phone) {
     await sleep(500);
 
     // 点击「发送验证码」按钮
-    const sendBtn = page.locator('button:has-text("发送验证码"), .send-code, [class*="send"], #code-button').first();
-    if (!(await sendBtn.isVisible({ timeout: 3_000 }))) {
-      return { success: false, sessionId: null, error: 'SMS button not found' };
+    // 注意：PDD 页面布局可能将按钮渲染在视口之外，
+    // 故使用 JS dispatch 模拟点击以绕过 Playwright 的视口限制
+    const btnClicked = await page.evaluate(() => {
+      const btn = document.querySelector('#code-button');
+      if (btn) { btn.click(); return true; }
+      return false;
+    });
+    if (!btnClicked) {
+      return { success: false, sessionId: null, error: 'SMS button not found via evaluate' };
     }
-    // 强制点击——按钮可能不在视口内（PDD 页面布局导致）
-    await sendBtn.click({ timeout: 5_000, force: true });
+    await sleep(500);
 
     // 创建 session 并保存
     const sessionId = generateSessionId();
@@ -208,12 +213,20 @@ export async function verifySmsCode(sessionId, code, db) {
     }
 
     // 点击「登录」按钮
-    const loginBtn = page.locator('button:has-text("登录"), .login-btn, [class*="login"]').first();
-    if (!(await loginBtn.isVisible({ timeout: 3_000 }))) {
-      return { success: false, error: 'Login button not found' };
+    // PDD 页面布局中登录按钮也可能在视口外，使用 JS dispatch
+    const loginClicked = await page.evaluate(() => {
+      const btn = document.querySelector('button:has-text("登录"), .login-btn, [class*="login"]');
+      // 简化版：查找包含「登录」文字的 button
+      const btns = document.querySelectorAll('button');
+      for (const b of btns) {
+        if (b.textContent.includes('登录')) { b.click(); return true; }
+      }
+      return false;
+    });
+    if (!loginClicked) {
+      return { success: false, error: 'Login button not found or not clickable' };
     }
-    // 强制点击——登录按钮可能不在视口内（PDD 页面布局导致）
-    await loginBtn.click({ timeout: 5_000, force: true });
+    await sleep(500);
 
     // 等待登录完成（页面跳转或 cookie 写入）
     await sleep(3_000);
