@@ -42,6 +42,11 @@ exports.main = async (event, context) => {
             user_id: openid,
             phone,
           });
+
+          if (result.code !== 0) {
+            return { code: result.code, error: result.error };
+          }
+
           if (result.data?.sessionId) {
             await db.collection('login_sessions').add({
               data: {
@@ -63,6 +68,11 @@ exports.main = async (event, context) => {
           platform,
           user_id: openid,
         });
+
+        // 引擎返回错误时，透传返回
+        if (result.code !== 0) {
+          return { code: result.code, error: result.error };
+        }
 
         // 保存 session_id 到临时存储
         await db.collection('login_sessions').add({
@@ -89,6 +99,10 @@ exports.main = async (event, context) => {
           session_id,
           code,
         });
+
+        if (result.code !== 0) {
+          return { code: result.code, error: result.error };
+        }
 
         if (result.data?.success && result.data?.cookies) {
           await db.collection('sessions').add({
