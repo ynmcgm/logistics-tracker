@@ -29,9 +29,35 @@ exports.main = async (event, context) => {
     switch (action) {
       // ===== 账号绑定 =====
       case 'authBind': {
-        const { platform } = data;
+        const { platform, method } = data;
         if (!platform) return { code: 1001, error: 'platform required' };
 
+        // SMS 验证码登录
+        if (method === 'sms') {
+          const { phone } = data;
+          if (!phone) return { code: 1001, error: 'phone required for sms login' };
+          const engineService = await getEngineService();
+          const result = await engineService.post('/login/sms-start', {
+            platform,
+            user_id: openid,
+            phone,
+          });
+          if (result.data?.sessionId) {
+            await db.collection('login_sessions').add({
+              data: {
+                session_id: result.data.sessionId,
+                user_openid: openid,
+                platform,
+                method: 'sms',
+                status: 'sms_sent',
+                created_at: db.serverDate(),
+              },
+            });
+          }
+          return { code: 0, data: result.data };
+        }
+
+        // 默认：QR 扫码登录
         const engineService = await getEngineService();
         const result = await engineService.post('/login', {
           platform,
@@ -49,6 +75,39 @@ exports.main = async (event, context) => {
             created_at: db.serverDate(),
           },
         });
+
+        return { code: 0, data: result.data };
+      }
+
+      case 'authSmsVerify': {
+        const { session_id, code } = data;
+        if (!session_id || !code) return { code: 1001, error: 'session_id and code required' };
+
+        const engineService = await getEngineService();
+        const result = await engineService.post('/login/sms-verify', {
+          platform: 'pdd',
+          session_id,
+          code,
+        });
+
+        if (result.data?.success && result.data?.cookies) {
+          await db.collection('sessions').add({
+            data: {
+              user_openid: openid,
+              platform: 'pdd',
+              status: 'active',
+              cookies: result.data.cookies,
+              created_at: db.serverDate(),
+              updated_at: db.serverDate(),
+            },
+          });
+          await db.collection('login_sessions')
+            .where({ session_id })
+            .update({
+              data: { status: 'success', bind_at: db.serverDate(), updated_at: db.serverDate() },
+            });
+          return { code: 0, data: { status: 'success' } };
+        }
 
         return { code: 0, data: result.data };
       }

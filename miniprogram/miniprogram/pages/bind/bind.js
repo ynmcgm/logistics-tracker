@@ -15,6 +15,15 @@ Page({
     currentPlatform: '',     // 当前操作的平台
     loginStatus: 'pending',  // pending | success | expired
     pollingTimer: null,
+    // SMS 模式
+    loginMode: 'qr',         // 'qr' | 'sms'
+    phone: '',               // 手机号
+    smsCode: '',             // 短信验证码
+    smsSessionId: '',        // sms 会话 ID
+    smsSent: false,          // 是否已发送验证码
+    smsCountdown: 0,         // 验证码倒计时
+    smsError: '',            // SMS 错误信息
+    smsTimer: null,
   },
 
   onShow() {
@@ -23,6 +32,7 @@ Page({
 
   onUnload() {
     this.stopPolling();
+    this.stopSmsCountdown();
   },
 
   /**
@@ -78,13 +88,22 @@ Page({
     }
 
     // 未绑定或已过期 → 发起绑定
+    this.setData({
+      loginMode: 'qr',     // 默认 QR 模式
+      phone: '',
+      smsCode: '',
+      smsSent: false,
+      smsError: '',
+    });
     this.startBind(platform);
   },
 
+  /* ────── QR 扫码登录 ────── */
+
   /**
-   * 发起绑定流程
+   * 发起绑定流程（QR 扫码方式）
    */
-  async   startBind(platform) {
+  async startBind(platform) {
     const names = { pdd: '拼多多', jd: '京东', taobao: '淘宝' };
     this.setData({
       showQR: true,
@@ -121,7 +140,6 @@ Page({
           this.stopPolling();
           wx.showToast({ title: '绑定成功！', icon: 'success' });
 
-          // 延迟关闭二维码弹窗并刷新状态
           setTimeout(() => {
             this.setData({ showQR: false });
             this.loadBindStatus();
@@ -131,11 +149,10 @@ Page({
           this.setData({ loginStatus: 'expired' });
           this.stopPolling();
         }
-        // pending → 继续轮询
       } catch (err) {
         console.error('Poll error:', err);
       }
-    }, 2000); // 每 2 秒轮询一次
+    }, 2000);
 
     this.data.pollingTimer = timer;
   },
@@ -151,19 +168,152 @@ Page({
   },
 
   /**
-   * 关闭二维码弹窗
+   * 关闭弹窗
    */
   closeQR() {
     this.stopPolling();
+    this.stopSmsCountdown();
     this.setData({ showQR: false });
   },
 
   /**
-   * 重试绑定
+   * 重试绑定（QR）
    */
   retryBind() {
     this.startBind(this.data.currentPlatform);
   },
+
+  /* ────── SMS 验证码登录 ────── */
+
+  /**
+   * 切换到 SMS 登录模式（仅 PDD）
+   */
+  switchToSms() {
+    this.stopPolling();
+    this.setData({
+      loginMode: 'sms',
+      qrBase64: '',
+      phone: '',
+      smsCode: '',
+      smsSent: false,
+      smsError: '',
+    });
+  },
+
+  /**
+   * 切换回 QR 扫码模式
+   */
+  switchToQr() {
+    this.setData({ loginMode: 'qr' });
+    this.startBind(this.data.currentPlatform);
+  },
+
+  /**
+   * 手机号输入
+   */
+  onPhoneInput(e) {
+    this.setData({ phone: e.detail.value });
+  },
+
+  /**
+   * 验证码输入
+   */
+  onSmsCodeInput(e) {
+    this.setData({ smsCode: e.detail.value });
+  },
+
+  /**
+   * 发送短信验证码
+   */
+  async sendSms() {
+    const phone = this.data.phone;
+    if (!/^1\d{10}$/.test(phone)) {
+      wx.showToast({ title: '请输入正确的手机号', icon: 'none' });
+      return;
+    }
+
+    this.setData({ smsError: '' });
+
+    try {
+      const result = await app.callApi('authBind', {
+        platform: 'pdd',
+        method: 'sms',
+        phone,
+      });
+
+      if (result.success && result.sessionId) {
+        this.setData({
+          smsSent: true,
+          smsSessionId: result.sessionId,
+          smsError: '',
+        });
+        this.startSmsCountdown();
+        wx.showToast({ title: '验证码已发送', icon: 'success' });
+      } else {
+        this.setData({ smsError: result.error || '发送验证码失败' });
+      }
+    } catch (err) {
+      this.setData({ smsError: err.message || '发送验证码失败' });
+    }
+  },
+
+  /**
+   * 验证短信验证码
+   */
+  async verifySms() {
+    if (!this.data.smsCode || this.data.smsCode.length < 4) {
+      wx.showToast({ title: '请输入验证码', icon: 'none' });
+      return;
+    }
+
+    this.setData({ smsError: '' });
+
+    try {
+      const result = await app.callApi('authSmsVerify', {
+        session_id: this.data.smsSessionId,
+        code: this.data.smsCode,
+      });
+
+      if (result.status === 'success') {
+        this.setData({ loginStatus: 'success' });
+        wx.showToast({ title: '绑定成功！', icon: 'success' });
+        setTimeout(() => {
+          this.setData({ showQR: false });
+          this.loadBindStatus();
+          app.refreshAll();
+        }, 1500);
+      } else {
+        this.setData({ smsError: result.error || '验证失败，请重试' });
+      }
+    } catch (err) {
+      this.setData({ smsError: err.message || '验证失败' });
+    }
+  },
+
+  /**
+   * 验证码倒计时
+   */
+  startSmsCountdown() {
+    this.stopSmsCountdown();
+    this.setData({ smsCountdown: 60 });
+    const timer = setInterval(() => {
+      if (this.data.smsCountdown <= 1) {
+        this.stopSmsCountdown();
+        return;
+      }
+      this.setData({ smsCountdown: this.data.smsCountdown - 1 });
+    }, 1000);
+    this.data.smsTimer = timer;
+  },
+
+  stopSmsCountdown() {
+    if (this.data.smsTimer) {
+      clearInterval(this.data.smsTimer);
+      this.data.smsTimer = null;
+    }
+  },
+
+  /* ────── 解绑 ────── */
 
   /**
    * 解绑
