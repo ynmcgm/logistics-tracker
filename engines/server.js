@@ -170,6 +170,58 @@ async function handleRequest(request, response) {
       return;
     }
 
+    // POST /login/sms-start - 发起 SMS 验证码登录（第 1 步）
+    if (path === '/login/sms-start' && method === 'POST') {
+      const body = await parseBody(request);
+      const { platform, user_id, phone } = body;
+
+      if (!platform || !user_id || !phone) {
+        jsonResponse(response, 400, { code: 1001, error: 'platform, user_id and phone required' });
+        return;
+      }
+
+      const engine = engineRegistry[platform];
+      if (!engine) {
+        jsonResponse(response, 400, { code: 1001, error: `Unsupported platform: ${platform}` });
+        return;
+      }
+
+      if (!engine.smsLogin) {
+        jsonResponse(response, 400, { code: 1001, error: 'SMS login not supported for this platform' });
+        return;
+      }
+
+      const result = await engine.smsLogin(user_id, phone);
+      jsonResponse(response, 200, { code: 0, data: result });
+      return;
+    }
+
+    // POST /login/sms-verify - 验证 SMS 码（第 2 步）
+    if (path === '/login/sms-verify' && method === 'POST') {
+      const body = await parseBody(request);
+      const { platform, session_id, code } = body;
+
+      if (!platform || !session_id || !code) {
+        jsonResponse(response, 400, { code: 1001, error: 'platform, session_id and code required' });
+        return;
+      }
+
+      const engine = engineRegistry[platform];
+      if (!engine) {
+        jsonResponse(response, 400, { code: 1001, error: `Unsupported platform: ${platform}` });
+        return;
+      }
+
+      if (!engine.verifySms) {
+        jsonResponse(response, 400, { code: 1001, error: 'SMS verification not supported for this platform' });
+        return;
+      }
+
+      const result = await engine.verifySms(session_id, code);
+      jsonResponse(response, 200, { code: 0, data: result });
+      return;
+    }
+
     // 404
     jsonResponse(response, 404, { code: 1003, error: 'Not found' });
   } catch (err) {

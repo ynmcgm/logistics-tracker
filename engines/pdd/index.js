@@ -12,7 +12,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { getContext, restoreContext } from '../common/browser.js';
 import { loadSession, validateSession, markExpired, incrementFailCount } from '../common/session.js';
 import { scrapeOrders } from './orders.js';
-import { startLogin, pollLoginStatus } from './login.js';
+import { startLogin, pollLoginStatus, startSmsLogin, verifySmsCode } from './login.js';
 
 const PLATFORM = 'pdd';
 
@@ -58,6 +58,28 @@ class PDDEngine {
    */
   async checkLoginStatusRaw(sessionId, userId) {
     return pollLoginStatus(sessionId, null, userId);
+  }
+
+  /**
+   * 第 1 步：启动 SMS 验证码登录
+   *
+   * @param {string} userId
+   * @param {string} phone - 用户手机号
+   * @returns {Promise<{ success: boolean, sessionId: string, error?: string }>}
+   */
+  async smsLogin(userId, phone) {
+    return startSmsLogin(userId, phone);
+  }
+
+  /**
+   * 第 2 步：验证 SMS 验证码并完成登录
+   *
+   * @param {string} sessionId
+   * @param {string} code - 6 位短信验证码
+   * @returns {Promise<{ success: boolean, status?: string, error?: string }>}
+   */
+  async verifySms(sessionId, code) {
+    return verifySmsCode(sessionId, code, this.db);
   }
 
   /**
